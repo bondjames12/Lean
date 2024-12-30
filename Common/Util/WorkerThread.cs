@@ -100,7 +100,7 @@ namespace QuantConnect.Util
             try
             {
                 _blockingCollection.CompleteAdding();
-                _workerThread.StopSafely(TimeSpan.FromMilliseconds(50), _threadCancellationTokenSource);
+                _workerThread.StopSafely(TimeSpan.FromMilliseconds(500), _threadCancellationTokenSource);
                 _threadCancellationTokenSource.DisposeSafely();
             }
             catch (Exception exception)
