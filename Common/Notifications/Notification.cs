@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using QuantConnect.Util;
 using System.Net.Http;
+using System.Reflection;
 
 namespace QuantConnect.Notifications
 {
@@ -84,8 +85,11 @@ namespace QuantConnect.Notifications
             {
                 if (Headers != null)
                 {
+                    Headers.Add("Content-Type", "application/json");
                     foreach (var header in Headers)
                     {
+                        if (header.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+                            continue;
                         client.DefaultRequestHeaders.Add(header.Key, header.Value);
                     }
                 }
@@ -424,12 +428,9 @@ namespace QuantConnect.Notifications
                 return false;
             }
 
-            var type = notification.GetType();
-            return type != typeof(NotificationEmail) &&
-                type != typeof(NotificationWeb) &&
-                type != typeof(NotificationSms) &&
-                type != typeof(NotificationTelegram) &&
-                type != typeof(NotificationFtp);
+            var sendMethod = notification.GetType().GetMethod("Send", BindingFlags.Instance | BindingFlags.Public);
+            return sendMethod != null && sendMethod.DeclaringType != typeof(Notification);
+
         }
     }
 }
