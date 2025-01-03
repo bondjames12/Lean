@@ -19,6 +19,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using QuantConnect.Util;
+using System.Net.Http;
 
 namespace QuantConnect.Notifications
 {
@@ -71,6 +72,30 @@ namespace QuantConnect.Notifications
             Address = address;
             Data = data;
             Headers = headers;
+        }
+
+        /// <summary>
+        /// Place REST POST call to the specified address with the specified DATA.
+        /// Data to send in body is JSON encoded
+        /// </summary>
+        public override void Send()
+        {
+            using (var client = new HttpClient())
+            {
+                if (Headers != null)
+                {
+                    foreach (var header in Headers)
+                    {
+                        client.DefaultRequestHeaders.Add(header.Key, header.Value);
+                    }
+                }
+
+                using (var content = new StringContent(JsonConvert.SerializeObject(Data), Encoding.UTF8, "application/json"))
+                {
+                    var response = client.PostAsync(new Uri(Address), content).Result;
+                    response.EnsureSuccessStatusCode();
+                }
+            }
         }
     }
 
