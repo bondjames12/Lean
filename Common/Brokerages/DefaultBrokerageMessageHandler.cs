@@ -35,7 +35,7 @@ namespace QuantConnect.Brokerages
     public class DefaultBrokerageMessageHandler : IBrokerageMessageHandler
     {
         private static readonly TimeSpan DefaultOpenThreshold = TimeSpan.FromMinutes(5);
-        private static readonly TimeSpan DefaultInitialDelay = TimeSpan.FromMinutes(15);
+        private static readonly TimeSpan DefaultInitialDelay = TimeSpan.FromMinutes(360);
 
         private volatile bool _connected;
 
