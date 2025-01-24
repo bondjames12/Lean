@@ -2812,6 +2812,24 @@ namespace QuantConnect.Algorithm
         }
 
         /// <summary>
+        /// Creates a ZigZag indicator for the specified symbol, with adjustable sensitivity and minimum trend length.
+        /// </summary>
+        /// <param name="symbol">The symbol for which to create the ZigZag indicator.</param>
+        /// <param name="sensitivity">The sensitivity for detecting pivots.</param>
+        /// <param name="minTrendLength">The minimum number of bars required for a trend before a pivot is confirmed.</param>
+        /// <param name="resolution">The resolution</param>
+        /// <param name="selector">Selects a value from the BaseData to send into the indicator, if null defaults to the Value property of BaseData (x => x.Value)</param>
+        /// <returns>The configured ZigZag indicator.</returns>
+        [DocumentationAttribute(Indicators)]
+        public ZigZag ZZ(Symbol symbol, decimal sensitivity = 0.05m, int minTrendLength = 1, Resolution? resolution = null, Func<IBaseData, IBaseDataBar> selector = null)
+        {
+            var name = CreateIndicatorName(symbol, $"ZZ({sensitivity},{minTrendLength})", resolution);
+            var zigZag = new ZigZag(name, sensitivity, minTrendLength);
+            InitializeIndicator(zigZag, resolution, selector, symbol);
+            return zigZag;
+        }
+
+        /// <summary>
         /// Creates a new name for an indicator created with the convenience functions (SMA, EMA, ect...)
         /// </summary>
         /// <param name="symbol">The symbol this indicator is registered to</param>
@@ -3863,7 +3881,8 @@ namespace QuantConnect.Algorithm
                     {
                         if (resolution.Value == Resolution.Daily)
                         {
-                            consolidator = new MarketHourAwareConsolidator(Settings.DailyPreciseEndTime, resolution.Value, subscription.Type, subscription.TickType, subscription.ExtendedMarketHours);
+                            consolidator = new MarketHourAwareConsolidator(Settings.DailyPreciseEndTime, resolution.Value, subscription.Type, subscription.TickType,
+                                Settings.DailyConsolidationUseExtendedMarketHours && subscription.ExtendedMarketHours);
                         }
                         period = resolution.Value.ToTimeSpan();
                     }
