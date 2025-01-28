@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "QuantConnect.DownloaderDataProvider.Launcher": {
+      "commandName": "Project",
+      "commandLineArgs": "--update"
+    }
+  }
+}

@@ -24,6 +24,9 @@ using QuantConnect.Configuration;
 using QuantConnect.Lean.Engine.DataFeeds;
 using DataFeeds = QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.DownloaderDataProvider.Launcher.Models.Constants;
+using System.Text;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 
 namespace QuantConnect.DownloaderDataProvider.Launcher;
 public static class Program
@@ -92,6 +95,21 @@ public static class Program
         foreach (var symbol in dataDownloadConfig.Symbols)
         {
             var downloadParameters = new DataDownloaderGetParameters(symbol, dataDownloadConfig.Resolution, dataDownloadConfig.StartDate, dataDownloadConfig.EndDate, dataDownloadConfig.TickType);
+
+            if (Config.GetBool(DownloaderCommandArguments.CommandUpdate,false))
+            {
+                var date = GetLastDataDate(symbol, dataDownloadConfig.TickType, dataDownloadConfig.Resolution);
+                if (date.HasValue)
+                {
+                    downloadParameters.StartUtc = date.Value.AddDays(-1);
+                    downloadParameters.EndUtc = DateTime.UtcNow;
+                    if (downloadParameters.StartUtc.Day >= downloadParameters.EndUtc.Day)
+                    {
+                        Log.Trace($"DownloaderDataProvider.Main(): No data available for the following parameters: {downloadParameters}");
+                        continue;
+                    }
+                }
+            }
 
             Log.Trace($"DownloaderDataProvider.Main(): Starting download {downloadParameters}");
             var downloadedData = dataDownloader.Get(downloadParameters);
@@ -191,4 +209,23 @@ public static class Program
         mapFileProvider.Initialize(dataProvider);
         factorFileProvider.Initialize(mapFileProvider, dataProvider);
     }
+
+    public static DateTime? GetLastDataDate(Symbol symbol, TickType tickType, Resolution res)
+    {
+        var zipFileName = LeanData.GenerateZipFilePath(Globals.DataFolder, symbol, DateTime.Now, res, tickType);
+        if (string.IsNullOrWhiteSpace(zipFileName)) return null;
+        string dir = Path.GetDirectoryName(zipFileName);
+        if (!Directory.Exists(dir)) return null;
+        var files = Directory.EnumerateFiles(dir, "*.zip").OrderDescending();
+        if (files == null) return null;
+        string newestFile = files.FirstOrDefault();
+        if(!string.IsNullOrWhiteSpace(newestFile))
+        {
+            DateTime newest = DateTime.ParseExact(Path.GetFileName(newestFile).Split("_").First(), DateFormat.EightCharacter, CultureInfo.InvariantCulture);
+            return newest;
+        }
+        return null;
+    }
+   
+
 }
