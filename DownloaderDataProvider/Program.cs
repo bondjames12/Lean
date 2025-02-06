@@ -24,9 +24,8 @@ using QuantConnect.Configuration;
 using QuantConnect.Lean.Engine.DataFeeds;
 using DataFeeds = QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.DownloaderDataProvider.Launcher.Models.Constants;
-using System.Text;
-using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.IO.Compression;
 
 namespace QuantConnect.DownloaderDataProvider.Launcher;
 public static class Program
@@ -103,7 +102,7 @@ public static class Program
                 {
                     downloadParameters.StartUtc = date.Value.AddDays(-1);
                     downloadParameters.EndUtc = DateTime.UtcNow;
-                    if (downloadParameters.StartUtc.Day >= downloadParameters.EndUtc.Day)
+                    if (downloadParameters.StartUtc >= downloadParameters.EndUtc)
                     {
                         Log.Trace($"DownloaderDataProvider.Main(): No data available for the following parameters: {downloadParameters}");
                         continue;
@@ -215,17 +214,84 @@ public static class Program
         var zipFileName = LeanData.GenerateZipFilePath(Globals.DataFolder, symbol, DateTime.Now, res, tickType);
         if (string.IsNullOrWhiteSpace(zipFileName)) return null;
         string dir = Path.GetDirectoryName(zipFileName);
-        if (!Directory.Exists(dir)) return null;
-        var files = Directory.EnumerateFiles(dir, "*.zip").OrderDescending();
-        if (files == null) return null;
-        string newestFile = files.FirstOrDefault();
-        if(!string.IsNullOrWhiteSpace(newestFile))
+
+        //if resolution is hourly
+        switch (res)
         {
-            DateTime newest = DateTime.ParseExact(Path.GetFileName(newestFile).Split("_").First(), DateFormat.EightCharacter, CultureInfo.InvariantCulture);
-            return newest;
+            case Resolution.Daily:
+            case Resolution.Hour:
+                var last = GetLastAvailableHourlyData(zipFileName);
+                if(last == DateTime.MinValue) return null;
+                return last;
+            case Resolution.Minute:
+            case Resolution.Second:
+            case Resolution.Tick:
+                if (!Directory.Exists(dir)) return null;
+                var files = Directory.EnumerateFiles(dir, "*.zip").OrderDescending();
+                if (files == null) return null;
+                string newestFile = files.FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(newestFile))
+                {
+                    DateTime newest = DateTime.ParseExact(Path.GetFileName(newestFile).Split("_").First(), DateFormat.EightCharacter, CultureInfo.InvariantCulture);
+                    return newest;
+                }
+                break;
         }
         return null;
     }
-   
+
+
+    private static DateTime GetLastAvailableHourlyData(string zipPath)
+    {
+        if (!File.Exists(zipPath))
+        {
+            return DateTime.MinValue;
+        }
+
+        DateTime lastDateTime = DateTime.MinValue;
+
+        try
+        {
+            using (var zip = ZipFile.OpenRead(zipPath))
+            {
+                foreach (var entry in zip.Entries)
+                {
+                    using (var reader = new StreamReader(entry.Open()))
+                    {
+                        string line;
+                        DateTime? lastEntryTime = null;
+
+                        // Read all lines to find the last timestamp
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (string.IsNullOrWhiteSpace(line)) continue;
+
+                            var parts = line.Split(',');
+                            if (parts.Length < 2) continue;
+
+                            // Parse the timestamp from the first column
+                            if (DateTime.TryParseExact(parts[0], "yyyyMMdd HH:mm",
+                                        CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime timestamp))
+                            {
+                                lastEntryTime = timestamp;
+                            }
+                        }
+
+                        if (lastEntryTime.HasValue && lastEntryTime.Value > lastDateTime)
+                        {
+                            lastDateTime = lastEntryTime.Value;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing zip file {zipPath}: {ex.Message}");
+        }
+
+        return lastDateTime;
+    }
+
 
 }
