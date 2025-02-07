@@ -283,3 +283,10 @@ Results/
 /Data/equity/usa/hour/*
 /Data/equity/usa/minute/*
 /Data/equity/usa/daily/*
+/Data/equity/usa/daily/aapl.zip
+/Data/equity/usa/daily/aig.zip
+/Data/equity/usa/daily/bac.zip
+/Data/equity/usa/daily/goog.zip
+/Data/equity/usa/daily/googl.zip
+/Data/equity/usa/hour/aig.zip
+/Data/equity/usa/hour/bac.zip
