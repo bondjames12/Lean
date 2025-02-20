@@ -15,6 +15,7 @@
 */
 
 using System;
+using System.Diagnostics;
 using System.Threading;
 using QuantConnect.Configuration;
 using QuantConnect.Lean.Engine;
@@ -73,6 +74,30 @@ namespace QuantConnect.Lean.Launcher
                 const string jobNullMessage = "Engine.Main(): Sorry we could not process this algorithm request.";
                 Log.Error(jobNullMessage);
                 throw new ArgumentException(jobNullMessage);
+            }
+
+            string desktopExe = Config.Get("desktop-exe");
+            if (!string.IsNullOrWhiteSpace(desktopExe))
+            {
+                var info = new ProcessStartInfo
+                {
+                    UseShellExecute = false,
+                    FileName = desktopExe,
+                    Arguments = Config.Get("desktop-http-port")
+                };
+                Process.Start(info);
+            }
+
+            string chartExe = Config.Get("chart-exe");
+            if (!string.IsNullOrWhiteSpace(chartExe))
+            {
+                var info = new ProcessStartInfo
+                {
+                    UseShellExecute = false,
+                    FileName = chartExe,
+                    Arguments = System.IO.Path.Combine(Globals.ResultsDestinationFolder, $"{job.AlgorithmId}.json")
+                };
+                Process.Start(info);
             }
 
             // Activate our PythonVirtualEnvironment

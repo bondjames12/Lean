@@ -1,0 +1,28 @@
+{
+  "profiles": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "Backtest ManualIndicatorAlgo": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name UniverseExamples.ManualIndicatorAlgorithm --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_config.json"
+    },
+    "Backtest THT1HR1150Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT1HR1150Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_config.json"
+    },
+    "LiveVPS08 THT1HR1150Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT1HR1150Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
+    },
+    "Backtest THT_15M_1150_v1Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT_15M_1150_v1Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_config.json"
+    },
+    "LiveVPS08 THT_15M_1150_v1Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT_15M_1150_v1Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
+    }
+  }
+}
