@@ -415,6 +415,16 @@ namespace QuantConnect.Algorithm
             return balanceOfPower;
         }
 
+        [DocumentationAttribute(Indicators)]
+        public BXTrender BX(Symbol symbol, int shortL1, int shortL2, int shortL3, Resolution? resolution = null, Func<IBaseData, decimal> selector = null)
+        {
+            var name = CreateIndicatorName(symbol, $"BXTrender({shortL1},{shortL2},{shortL3})", resolution);
+            var bXTrender = new BXTrender(name, shortL1, shortL2, shortL3);
+            InitializeIndicator(bXTrender, resolution, selector, symbol);
+
+            return bXTrender;
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CoppockCurve"/> indicator
         /// </summary>
