@@ -26,6 +26,8 @@ using DataFeeds = QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.DownloaderDataProvider.Launcher.Models.Constants;
 using System.Globalization;
 using System.IO.Compression;
+using Newtonsoft.Json;
+using System.Security.Policy;
 
 namespace QuantConnect.DownloaderDataProvider.Launcher;
 public static class Program
@@ -49,6 +51,8 @@ public static class Program
     /// Provides access to exchange hours and raw data times zones in various markets
     /// </summary>
     private static readonly MarketHoursDatabase _marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
+
+    private static IApi _api;
 
     /// <summary>
     /// The main entry point for the application.
@@ -85,6 +89,39 @@ public static class Program
         if (dataDownloader == null)
         {
             throw new ArgumentNullException(nameof(dataDownloader), "The data downloader instance cannot be null. Please ensure that a valid instance of data downloader is provided.");
+        }
+
+        if (Config.GetBool(DownloaderCommandArguments.CommandWebSymbols, false))
+        {
+            //Download symbol list from web instead
+            string url = Config.Get(DownloaderCommandArguments.CommandWebSymbolsURL);
+            SymbolsList symbolList = new SymbolsList();
+            try
+            {
+                var content = _api.Download(url, new List<KeyValuePair<string, string>>() { new KeyValuePair<string, string>("Key", Config.Get(DownloaderCommandArguments.CommandWebSymbolsKey)) }, null, null);
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    Log.Error($"No Trading Symbols were returned from symbols URL {url}");
+                    return;
+                }
+                var list = JsonConvert.DeserializeObject<SymbolsListRaw>(content);
+                if (list == null || list.Symbols == null || list.Symbols.Count == 0)
+                {
+                    Log.Error($"No Trading Symbols were deserialized from URL {url}");
+                    return;
+                }
+                symbolList.Symbols = list.Symbols.Select(s => new SymbolObj() { Symbol = s.Symbol, Type = Enum.Parse<SecurityType>(s.Type), Action = s.Action }).ToList();
+                dataDownloadConfig.Symbols.Clear();
+                foreach (var symbol in symbolList.Symbols)
+                {
+                    dataDownloadConfig.Symbols.Add(Symbol.Create(symbol.Symbol, symbol.Type, Market.USA));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Exception occurs while getting Trading Symbols were from URL {url} : {ex.Message} {ex.StackTrace}");
+                return;
+            }
         }
 
         var totalDownloadSymbols = dataDownloadConfig.Symbols.Count;
@@ -197,7 +234,7 @@ public static class Program
         var dataProvider = Composer.Instance.GetExportedValueByTypeName<IDataProvider>("DefaultDataProvider");
         var mapFileProvider = Composer.Instance.GetExportedValueByTypeName<IMapFileProvider>(Config.Get("map-file-provider", "LocalDiskMapFileProvider"));
         var factorFileProvider = Composer.Instance.GetExportedValueByTypeName<IFactorFileProvider>(Config.Get("factor-file-provider", "LocalDiskFactorFileProvider"));
-
+        _api = Composer.Instance.GetExportedValueByTypeName<IApi>(Config.Get("api-handler"));
         var optionChainProvider = Composer.Instance.GetPart<IOptionChainProvider>();
         if (optionChainProvider == null)
         {
@@ -207,6 +244,7 @@ public static class Program
 
         mapFileProvider.Initialize(dataProvider);
         factorFileProvider.Initialize(mapFileProvider, dataProvider);
+        _api.Initialize(0, "", Globals.DataFolder);
     }
 
     public static DateTime? GetLastDataDate(Symbol symbol, TickType tickType, Resolution res)

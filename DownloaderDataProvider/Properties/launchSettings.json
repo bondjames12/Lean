@@ -1,8 +1,12 @@
 {
   "profiles": {
-    "QuantConnect.DownloaderDataProvider.Launcher": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "config_ibkr_vps08-6-Minute-web": {
       "commandName": "Project",
-      "commandLineArgs": "--update"
+      "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\Downloader\\config_ibkr_vps08-6-Minute-web.json"
     }
   }
 }

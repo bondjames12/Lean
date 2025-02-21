@@ -18,6 +18,9 @@ namespace QuantConnect.DownloaderDataProvider.Launcher.Models.Constants
 {
     public sealed class DownloaderCommandArguments
     {
+        public const string CommandWebSymbols = "web-symbols";
+        public const string CommandWebSymbolsURL = "web-symbols-url";
+        public const string CommandWebSymbolsKey = "web-symbols-key";
         public const string CommandUpdate = "update";
 
         public const string CommandConfig = "config";
