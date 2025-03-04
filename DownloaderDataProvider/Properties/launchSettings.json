@@ -7,6 +7,10 @@
     "config_ibkr_vps08-6-Minute-web": {
       "commandName": "Project",
       "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\Downloader\\config_ibkr_vps08-6-Minute-web.json"
+    },
+    "config_ibkr_localhost-6-Minute-web.json": {
+      "commandName": "Project",
+      "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\Downloader\\config_ibkr_localhost-6-Minute-web.json"
     }
   }
 }
