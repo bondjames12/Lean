@@ -37,6 +37,8 @@ using System.Net.Http.Headers;
 using System.Collections.Concurrent;
 using System.Text;
 using Newtonsoft.Json.Serialization;
+using System.Threading.Tasks;
+using Polly;
 
 namespace QuantConnect.Api
 {
@@ -1441,11 +1443,54 @@ namespace QuantConnect.Api
                     client.Value.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
                 }
 
-                return client.Value.GetByteArrayAsync(new Uri(address)).Result;
+                // Define retry policy with exponential backoff
+                var retryPolicy = Policy
+                    .Handle<HttpRequestException>()
+                    .Or<TaskCanceledException>()
+                    .Or<WebException>()
+                    .Or<TimeoutException>()
+                    .OrResult<byte[]>(r => r == null)
+                    .WaitAndRetry(
+                        // Calculate number of retries to stay within 90 seconds total wait time
+                        // Starting with 1s and doubling each time (1, 2, 4, 8, 16, 32, 27)
+                        // The last retry is reduced to make the sum close to but not exceeding 90 seconds
+                        new[]
+                        {
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(2),
+                    TimeSpan.FromSeconds(4),
+                    TimeSpan.FromSeconds(8),
+                    TimeSpan.FromSeconds(16),
+                    TimeSpan.FromSeconds(32),
+                    TimeSpan.FromSeconds(27)  // Adjusted to keep total under 90s
+                        },
+                        (outcome, timeSpan, retryCount, context) =>
+                        {
+                            // Log retry attempts
+                            Log.Debug($"Download retry attempt {retryCount} after {timeSpan.TotalSeconds}s delay.  URL: {address}");
+                        });
+
+                // Execute the HTTP request with the retry policy
+                return retryPolicy.Execute(() =>
+                {
+                    try
+                    {
+                        return client.Value.GetByteArrayAsync(new Uri(address)).Result;
+                    }
+                    catch (AggregateException ae)
+                    {
+                        // Unwrap AggregateException to allow proper handling by Polly
+                        if (ae.InnerException != null)
+                        {
+                            throw ae.InnerException;
+                        }
+                        throw;
+                    }
+                });
             }
             catch (Exception exception)
             {
-                var message = $"Api.DownloadBytes(): Failed to download data from {address}";
+                var message = $"Api.DownloadBytes(): Failed to download data from {address} after multiple retry attempts";
                 if (!userName.IsNullOrEmpty() || !password.IsNullOrEmpty())
                 {
                     message += $" with username: {userName} and password {password}";
