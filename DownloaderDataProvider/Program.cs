@@ -126,11 +126,13 @@ public static class Program
                     return;
                 }
                 symbolList.Symbols = list.Symbols.Select(s => new SymbolObj() { Symbol = s.Symbol, Type = Enum.Parse<SecurityType>(s.Type), Action = s.Action }).ToList();
-                dataDownloadConfig.Symbols.Clear();
+                List<Symbol> symList = new List<Symbol>();
+                
                 foreach (var symbol in symbolList.Symbols)
                 {
-                    dataDownloadConfig.Symbols.Add(Symbol.Create(symbol.Symbol, symbol.Type, Market.USA));
+                    symList.Add(Symbol.Create(symbol.Symbol, symbol.Type, Market.USA));
                 }
+                dataDownloadConfig.Symbols = symList;
             }
             catch (Exception ex)
             {

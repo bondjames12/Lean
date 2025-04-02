@@ -65,7 +65,7 @@ public abstract class BaseDataDownloadConfig
     /// <summary>
     /// Gets the list of symbols for which the data will be downloaded.
     /// </summary>
-    public IReadOnlyCollection<Symbol> Symbols { get; protected set; } = [];
+    public IReadOnlyCollection<Symbol> Symbols { get; set; } = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BaseDataDownloadConfig"/> class.

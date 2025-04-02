@@ -23,6 +23,9 @@
     "LiveVPS08 THT_15M_1150_v1Strat": {
       "commandName": "Project",
       "commandLineArgs": "--algorithm-type-name THT_15M_1150_v1Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
     }
   }
 }
