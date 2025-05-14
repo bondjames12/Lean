@@ -348,7 +348,8 @@ def getTradesOnlyHistory(algorithm, symbol, start):
                 var ticks = allHistory.OfType<Tick>().Where(e => e.TickType == TickType.Quote).ToList();
                 spyFlag = ticks.Any(e => e.Symbol == spy);
                 ibmFlag = ticks.Any(e => e.Symbol == ibm);
-            } else
+            }
+            else
             {
                 var allHistory = algorithm.History(new[] { spy, ibm }, TimeSpan.FromDays(1), historyResolution).SelectMany(slice => slice.AllData).ToList();
                 // Checking for QuoteBar data for SPY and IBM
@@ -1748,7 +1749,7 @@ def getHistoryForContractDepthOffset(algorithm, symbol, start, end, resolution, 
                 Assert.AreEqual(132104, tickHistory.Count());
 
                 var openInterestHistory = algorithm.History<OpenInterest>(twxSymbol, twxHistoryStart, twxHistoryEnd);
-                Assert.AreEqual(1050, openInterestHistory.Count());
+                Assert.AreEqual(391, openInterestHistory.Count());
             }
             else
             {
@@ -1788,7 +1789,7 @@ def getOpenInterestHistory(algorithm, symbol, start, end):
                     Assert.AreEqual(132104, tickHistory.shape[0].As<int>());
 
                     dynamic openInterestHistory = getOpenInterestHistory(algorithm, twxSymbol, twxHistoryStart, twxHistoryEnd);
-                    Assert.AreEqual(1050, openInterestHistory.shape[0].As<int>());
+                    Assert.AreEqual(391, openInterestHistory.shape[0].As<int>());
                 }
             }
         }
@@ -3552,6 +3553,76 @@ def get_history(algorithm, security):
                 var security = getCustomSecurity(algorithm);
                 var history = getHistory(algorithm, security).As<List<PythonData>>() as List<PythonData>;
                 Assert.IsNotEmpty(history);
+            }
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void HistoryHandlesSymbolChangedEventsCorrectly(bool useCreateSymbol)
+        {
+            var start = new DateTime(2021, 1, 1);
+            _algorithm = GetAlgorithm(start);
+            _algorithm.SetEndDate(2021, 1, 5);
+
+            Symbol symbol;
+            if (useCreateSymbol)
+            {
+                symbol = Symbol.Create(Futures.Indices.SP500EMini, SecurityType.Future, Market.CME);
+            }
+            else
+            {
+                var future = _algorithm.AddFuture(
+                    Futures.Indices.SP500EMini,
+                    dataMappingMode: DataMappingMode.OpenInterest,
+                    dataNormalizationMode: DataNormalizationMode.BackwardsRatio,
+                    contractDepthOffset: 0);
+                symbol = future.Symbol;
+            }
+
+            // Retrieve historical SymbolChangedEvent data
+            var history = _algorithm.History<SymbolChangedEvent>(symbol, TimeSpan.FromDays(365)).ToList();
+
+            // Ensure the history contains symbol change events
+            Assert.IsNotEmpty(history);
+            Assert.AreEqual(4, history.Count);
+
+            // Verify each event has valid old and new symbols, and they are different
+            foreach (var symbolChangedEvent in history)
+            {
+                Assert.IsNotNull(symbolChangedEvent.OldSymbol);
+                Assert.IsNotNull(symbolChangedEvent.NewSymbol);
+                Assert.AreNotEqual(symbolChangedEvent.OldSymbol, symbolChangedEvent.NewSymbol);
+            }
+        }
+
+        [Test]
+        public void OpenInterestHistoryOnlyContainsDataDuringRegularTradingHours()
+        {
+            var start = new DateTime(2013, 12, 01);
+            _algorithm = GetAlgorithm(start);
+            _algorithm.SetEndDate(2013, 12, 31);
+
+            // Add ES (E-mini S&P 500)
+            var future = _algorithm.AddFuture("ES", Resolution.Daily, Market.CME);
+
+            var history = _algorithm.History<OpenInterest>(future.Symbol, new DateTime(2013, 10, 10), new DateTime(2013, 11, 01), Resolution.Daily).ToList();
+
+            /* Expected 16 trading days breakdown:
+                October 2013:
+                10(Thu), 11(Fri),
+                14(Mon), 15(Tue), 16(Wed), 17(Thu), 18(Fri),
+                21(Mon), 22(Tue), 23(Wed), 24(Thu), 25(Fri),
+                28(Mon), 29(Tue), 30(Wed), 31(Thu)
+            */
+            Assert.AreEqual(16, history.Count);
+
+            // Regular trading hours: Monday-Friday 9:30am-5:00pm ET
+            foreach (var data in history)
+            {
+                var date = data.EndTime;
+                var dayOfWeek = date.DayOfWeek;
+                Assert.AreNotEqual(DayOfWeek.Saturday, dayOfWeek);
+                Assert.AreNotEqual(DayOfWeek.Sunday, dayOfWeek);
             }
         }
 
