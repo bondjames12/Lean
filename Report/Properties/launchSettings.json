@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "QuantConnect.Report": {
+      "commandName": "Project",
+      "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\Reports\\report_config.json --backtest-data-source-file \"C:\\Users\\colin\\Documents\\Projects\\lean\\Lean\\Launcher\\bin\\Debug\\THT_Daily_BX_Breakout_v1Strat.json\""
+    }
+  }
+}
