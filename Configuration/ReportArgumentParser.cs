@@ -33,6 +33,7 @@ namespace QuantConnect.Configuration
 
         private static readonly List<CommandLineOption> Options = new List<CommandLineOption>
             {
+                new CommandLineOption("config", CommandOptionType.SingleValue),
                 new CommandLineOption("close-automatically", CommandOptionType.SingleValue),
                 new CommandLineOption("data-folder", CommandOptionType.SingleValue),
                 new CommandLineOption("strategy-name", CommandOptionType.SingleValue, "Strategy name"),
