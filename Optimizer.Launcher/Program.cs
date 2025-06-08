@@ -45,7 +45,6 @@ namespace QuantConnect.Optimizer.Launcher
                 Log.DebuggingEnabled = Config.GetBool("debug-mode");
                 Log.FilePath = Path.Combine(Config.Get("results-destination-folder"), "log.txt");
                 Log.LogHandler = Composer.Instance.GetExportedValueByTypeName<ILogHandler>(Config.Get("log-handler", "CompositeLogHandler"));
-
                 var optimizationStrategyName = Config.Get("optimization-strategy",
                     "QuantConnect.Optimizer.GridSearchOptimizationStrategy");
                 var channel = Config.Get("data-channel");

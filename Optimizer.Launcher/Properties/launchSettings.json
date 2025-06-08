@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "THT_Daily_BX_Breakout_v1Strat BX Optimizer": {
+      "commandName": "Project",
+      "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_bx_optimizer_config.json"
+    }
+  }
+}

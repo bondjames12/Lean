@@ -59,7 +59,7 @@ namespace QuantConnect.Lean.Launcher
             }
 
             //Name thread for the profiler:
-            Thread.CurrentThread.Name = "Algorithm Analysis Thread";
+             Thread.CurrentThread.Name = "Algorithm Analysis Thread";
 
             Initializer.Start();
             leanEngineSystemHandlers = Initializer.GetSystemHandlers();

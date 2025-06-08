@@ -69,6 +69,12 @@ namespace QuantConnect.Optimizer.Launcher
             {
                 _extraLeanArguments += $" --algorithm-location \"{algorithmLocation}\"";
             }
+
+            var logHandler = Configuration.Config.Get("log-handler-optimizer");
+            if (!string.IsNullOrEmpty(logHandler))
+            {
+                _extraLeanArguments += $" --log-handler \"{logHandler}\"";
+            }
         }
 
         /// <summary>
