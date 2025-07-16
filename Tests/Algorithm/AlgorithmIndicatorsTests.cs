@@ -573,6 +573,109 @@ class GoodCustomIndicator:
             }
         }
 
+        [Test]
+        public void IndicatorHistoryDataFrameDoesNotCointainDefaultDateTimeIndex()
+        {
+            var pandasConverter = new PandasConverter();
+            var indicatorsDataPointPerProperty = new List<InternalIndicatorValues>
+                {
+                    new InternalIndicatorValues(null, "current")
+                };
+            var lazyDataFrame = new Lazy<PyObject>(
+                    () => pandasConverter.GetIndicatorDataFrame(indicatorsDataPointPerProperty.Select(x => new KeyValuePair<string, List<IndicatorDataPoint>>(x.Name, x.Values))),
+                    isThreadSafe: false);
+            var indicatorHistory = new IndicatorHistory(new List<IndicatorDataPoints>(), indicatorsDataPointPerProperty, lazyDataFrame);
+            indicatorHistory.Current.Add(new IndicatorDataPoint(Symbols.SPY, new DateTime(2018, 1, 1), 100));
+            indicatorHistory.Current.Add(new IndicatorDataPoint(Symbols.SPY, new DateTime(2018, 1, 2), 100));
+            // Force insertion of a default(DateTime) timestamp to ensure it's excluded from the DataFrame
+            indicatorHistory.Current.Add(new IndicatorDataPoint(Symbols.SPY, default, 100));
+
+            dynamic dataframe = indicatorHistory.DataFrame;
+            using (Py.GIL())
+            {
+                var index = dataframe.index;
+                foreach (dynamic time in index)
+                {
+                    DateTime timestamp = (DateTime)time.AsManagedObject(typeof(DateTime));
+                    // Ensure that no timestamp in the DataFrame index is equal to default(DateTime)
+                    Assert.AreNotEqual(default(DateTime), timestamp);
+                }
+            }
+        }
+
+        [Test]
+        public void IndicatorHistoryShouldIncludeValidIndicatorsAndExplicitlyIncludedProperties()
+        {
+            var referenceSymbol = Symbol.Create("IBM", SecurityType.Equity, Market.USA);
+            var indicator = new TestIndicator();
+            _algorithm.SetDateTime(new DateTime(2013, 10, 11));
+            var history = _algorithm.History(new[] { referenceSymbol }, TimeSpan.FromDays(5), Resolution.Minute);
+            var indicatorValues = _algorithm.IndicatorHistory(indicator, history);
+
+            dynamic dataframe = indicatorValues.DataFrame;
+            using (Py.GIL())
+            {
+                var index = dataframe.index;
+                var columns = dataframe.columns;
+                var expectedColumns = new List<string> { "smaprop", "genericprop", "current", "nongenericprop", "counter", "indicatortype", "description" };
+                var columnsCount = 0;
+                foreach (dynamic col in columns)
+                {
+                    columnsCount++;
+                    var columnName = (string)col.AsManagedObject(typeof(string));
+                    Assert.IsTrue(expectedColumns.Contains(columnName));
+                }
+                Assert.AreEqual(expectedColumns.Count, columnsCount);
+
+                // Validate that the number of rows in the "current" column
+                // matches the row count in "counter", "indicatortype", and "description" columns
+                // Get the number of rows in each relevant column using __len__()
+                int currentLen = dataframe["current"].InvokeMethod("__len__").As<int>();
+                int counterLen = dataframe["counter"].InvokeMethod("__len__").As<int>();
+                int indicatorTypeLen = dataframe["indicatortype"].InvokeMethod("__len__").As<int>();
+                int descriptionLen = dataframe["description"].InvokeMethod("__len__").As<int>();
+
+                // Assert that all lengths match the length of "current"
+                Assert.AreEqual(currentLen, counterLen);
+                Assert.AreEqual(currentLen, indicatorTypeLen);
+                Assert.AreEqual(currentLen, descriptionLen);
+            }
+        }
+
+        private enum TestIndicatorType
+        {
+            TypeA,
+            TypeB
+        }
+
+        private class TestIndicator : IndicatorBase<QuoteBar>, IIndicatorWarmUpPeriodProvider
+        {
+            [PandasIgnore]
+            public Identity IgnoredProp { get; }
+            public SimpleMovingAverage SmaProp { get; }
+            public IndicatorBase<IndicatorDataPoint> GenericProp { get; }
+            public IndicatorBase NonGenericProp { get; }
+            public int Counter { get; set; }
+            public TestIndicatorType IndicatorType { get; set; }
+            public string Description { get; set; }
+            private bool _isReady;
+            public int WarmUpPeriod => 1;
+            public override bool IsReady => _isReady;
+            public TestIndicator() : base("Pepe")
+            {
+                SmaProp = new SimpleMovingAverage("SMA", 5);
+                GenericProp = new Identity("Generic");
+                IgnoredProp = new Identity("Ignored");
+                NonGenericProp = new Identity("NoGeneric");
+            }
+            protected override decimal ComputeNextValue(QuoteBar input)
+            {
+                Counter++;
+                _isReady = true;
+                return input.Ask.High;
+            }
+        }
+
         private class CustomIndicator : IndicatorBase<QuoteBar>, IIndicatorWarmUpPeriodProvider
         {
             private bool _isReady;
@@ -638,6 +741,28 @@ def create_consolidator():
                         break;
                     default:
                         break;
+                }
+            }
+        }
+
+        [Test]
+        public void IchimokuIndicatorHistoryDataFrameDoesNotContainNaNInCurrentColumn()
+        {
+            var referenceSymbol = Symbol.Create("IBM", SecurityType.Equity, Market.USA);
+            _algorithm.SetDateTime(new DateTime(2013, 10, 11));
+            var history = _algorithm.History(new[] { referenceSymbol }, TimeSpan.FromDays(5), Resolution.Minute);
+            var indicator = new IchimokuKinkoHyo(9, 26, 17, 52, 26, 26);
+            var indicatorValues = _algorithm.IndicatorHistory(indicator, history);
+            indicatorValues.Current.Add(new IndicatorDataPoint(referenceSymbol, default(DateTime), 1));
+
+            dynamic dataframe = indicatorValues.DataFrame;
+            using (Py.GIL())
+            {
+                var currentColumn = dataframe["current"];
+                foreach (PyObject value in currentColumn)
+                {
+                    double doubleValue = value.As<double>();
+                    Assert.IsFalse(double.IsNaN(doubleValue));
                 }
             }
         }
