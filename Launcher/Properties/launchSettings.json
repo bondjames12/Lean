@@ -19,10 +19,6 @@
     "Container (Dockerfile)": {
       "commandName": "Docker"
     },
-    "LiveVPS08 THT_Daily_BX_Breakout_v1Strat": {
-      "commandName": "Project",
-      "commandLineArgs": "--algorithm-type-name THT_Daily_BX_Breakout_v1Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
-    },
     "Backtest THT_Daily_BX_Breakout_v1Strat": {
       "commandName": "Project",
       "commandLineArgs": "--log-handler \"QuantConnect.Logging.ConsoleErrorLogHandler\" --algorithm-type-name THT_Daily_BX_Breakout_v1Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_config.json"
@@ -30,6 +26,14 @@
     "LiveVPS08 THT_15M_1150_v1Strat": {
       "commandName": "Project",
       "commandLineArgs": "--algorithm-type-name THT_15M_1150_v1Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
+    },
+    "Backtest THT_Daily_BX_Breakout_v2Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT_Daily_BX_Breakout_v2Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_config.json"
+    },
+    "LiveVPS08 THT_Daily_BX_Breakout_v2Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT_Daily_BX_Breakout_v2Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
     }
   }
 }
