@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -36,6 +36,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <NuGetAudit>False</NuGetAudit>
   </PropertyGroup>
   <Target Name="Print" BeforeTargets="Build">
     <Message Text="SelectedOptimization $(SelectedOptimization)" Importance="high" />
@@ -62,6 +63,8 @@
     <ProjectReference Include="..\Indicators\QuantConnect.Indicators.csproj" />
     <ProjectReference Include="..\Common\QuantConnect.csproj" />
     <ProjectReference Include="..\Logging\QuantConnect.Logging.csproj" />
+    <ProjectReference Include="..\Messaging\QuantConnect.Messaging.csproj" />
+    <ProjectReference Include="..\Queues\QuantConnect.Queues.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\LICENSE">
