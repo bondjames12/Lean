@@ -78,8 +78,8 @@ namespace QuantConnect.Indicators
             }
 
             var atr = _atr.Current.Value;
-            var up = input.Close - _multiplier * atr;
-            var dn = input.Close + _multiplier * atr;
+            var up = input.Close - (_multiplier * atr);
+            var dn = input.Close + (_multiplier * atr);
 
             if (!_isInitialized)
             {

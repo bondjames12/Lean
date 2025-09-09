@@ -34,6 +34,10 @@
     "LiveVPS08 THT_Daily_BX_Breakout_v2Strat": {
       "commandName": "Project",
       "commandLineArgs": "--algorithm-type-name THT_Daily_BX_Breakout_v2Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\live-interactive_config.json"
+    },
+    "Backtest THT_Daily_BX_Hybrid_v3Strat": {
+      "commandName": "Project",
+      "commandLineArgs": "--algorithm-type-name THT_Daily_BX_Hybrid_v3Strat --config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\backtesting_config.json"
     }
   }
 }
