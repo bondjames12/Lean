@@ -12,6 +12,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Lean/Launcher/QuantConnect.Lean.Launcher.csproj", "Lean/Launcher/"]
 COPY ["Lean.Brokerages.InteractiveBrokers/QuantConnect.InteractiveBrokersBrokerage/QuantConnect.InteractiveBrokersBrokerage.csproj", "Lean.Brokerages.InteractiveBrokers/QuantConnect.InteractiveBrokersBrokerage/"]
+COPY ["Lean.DataSource.Polygon/QuantConnect.Polygon/QuantConnect.DataSource.Polygon.csproj", "Lean.DataSource.Polygon/QuantConnect.Polygon/"]
 COPY ["Lean/Engine/QuantConnect.Lean.Engine.csproj", "Lean/Engine/"]
 COPY ["Lean/Algorithm.CSharp/QuantConnect.Algorithm.CSharp.csproj", "Lean/Algorithm.CSharp/"]
 COPY ["Lean/Algorithm.Framework/QuantConnect.Algorithm.Framework.csproj", "Lean/Algorithm.Framework/"]
