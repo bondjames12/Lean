@@ -28,7 +28,7 @@ namespace QuantConnect.Indicators
         /// <summary>
         /// Required period, in data points, for the indicator to be ready and fully initialized.
         /// </summary>
-        public int WarmUpPeriod { get; }
+        public override int WarmUpPeriod { get; }
 
         private readonly ExponentialMovingAverage _ema1;
         private readonly ExponentialMovingAverage _ema2;
@@ -64,7 +64,7 @@ namespace QuantConnect.Indicators
 
             // Calculate warm-up period (Max EMA periods + RSI warm-up)
             var maxEmaPeriod = Math.Max(_shortL1, _shortL2);
-            WarmUpPeriod = maxEmaPeriod + _rsi.WarmUpPeriod;
+            WarmUpPeriod = maxEmaPeriod + _rsi.WarmUpPeriod + 1;
 
             // Register dependencies for automatic updates
             //RegisterIndicator(_ema1, Update);
