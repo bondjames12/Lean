@@ -61,9 +61,13 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 throw new RegressionTestException("Expected order ticket in order event to not be null");
             }
-            if (orderEvent.Status == OrderStatus.Submitted && _ticket != null)
+            if (_ticket == null)
             {
-                throw new RegressionTestException("Field _ticket not expected no be assigned on the first order event");
+                throw new RegressionTestException("Expected the ticket to have been returned by the MarketOrder call");
+            }
+            if (!ReferenceEquals(ticket, _ticket))
+            {
+                throw new RegressionTestException("Expected the ticket in the order event to be the same instance as the one returned by MarketOrder");
             }
 
             Debug(ticket.ToString());
@@ -134,6 +138,7 @@ namespace QuantConnect.Algorithm.CSharp
             {"Estimated Strategy Capacity", "$36000000.00"},
             {"Lowest Capacity Asset", "SPY R735QTJ8XC9X"},
             {"Portfolio Turnover", "0.99%"},
+            {"Drawdown Recovery", "3"},
             {"OrderListHash", "ac3803a8abaf1d1e77e009c418ba68e2"}
         };
     }
