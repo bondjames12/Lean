@@ -20,6 +20,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using QuantConnect.Algorithm;
+using QuantConnect.Algorithm.Framework.Execution;
 using QuantConnect.Algorithm.Framework.Portfolio.SignalExports;
 using QuantConnect.AlgorithmFactory.Python.Wrappers;
 using QuantConnect.Brokerages;
@@ -42,7 +43,9 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
     public class BrokerageTransactionHandler : ITransactionHandler
     {
         private IAlgorithm _algorithm;
+        private QCAlgorithm _qcAlgorithmIntance;
         private SignalExportManager _signalExport;
+        private IExecutionModel _executionModel;
         private IBrokerage _brokerage;
         private bool _brokerageIsBacktesting;
         private bool _loggedFeeAdjustmentWarning;
@@ -51,7 +54,9 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
         private int _totalOrderCount;
 
         // this bool is used to check if the warning message for the rounding of order quantity has been displayed for the first time
-        private bool _firstRoundOffMessage = false;
+        private bool _firstRoundOffMessage;
+        // this bool is used to check if the warning message for price rounding has been displayed for the first time
+        private bool _hasLoggedPriceRoundingWarning;
 
         // this value is used for determining how confident we are in our cash balance update
         private long _lastFillTimeTicks;
@@ -202,9 +207,19 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
 
             IsActive = true;
 
-            _signalExport = _algorithm is QCAlgorithm
-                ? (_algorithm as QCAlgorithm).SignalExport
-                : (_algorithm as AlgorithmPythonWrapper).SignalExport;
+            if (_algorithm is QCAlgorithm qcAlgorithm)
+            {
+                _qcAlgorithmIntance = qcAlgorithm;
+                _signalExport = qcAlgorithm.SignalExport;
+                _executionModel = qcAlgorithm.Execution;
+            }
+            else
+            {
+                var pyAlgorithmWrapper = _algorithm as AlgorithmPythonWrapper;
+                _qcAlgorithmIntance = pyAlgorithmWrapper.BaseAlgorithm;
+                _signalExport = pyAlgorithmWrapper.SignalExport;
+                _executionModel = pyAlgorithmWrapper.Execution;
+            }
 
             NewOrderEvent += (s, e) => _signalExport.OnOrderEvent(e);
             InitializeTransactionThread();
@@ -320,13 +335,7 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
 
                 EnqueueOrderRequest(request);
 
-                // wait for the transaction handler to set the order reference into the new order ticket,
-                // so we can ensure the order has already been added to the open orders,
-                // before returning the ticket to the algorithm.
-                if (!request.Asynchronous)
-                {
-                    WaitForOrderSubmission(ticket);
-                }
+                WaitForOrderSubmission(ticket);
             }
             else
             {
@@ -357,6 +366,12 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
         /// <param name="ticket">The <see cref="OrderTicket"/> expecting to be submitted</param>
         protected virtual void WaitForOrderSubmission(OrderTicket ticket)
         {
+            // We only wait for synchronous orders to be submitted
+            if (ticket.SubmitRequest.Asynchronous)
+            {
+                return;
+            }
+
             var orderSetTimeout = Time.OneSecond;
             if (!ticket.OrderSet.WaitOne(orderSetTimeout))
             {
@@ -1351,6 +1366,8 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
 
                     NewOrderEvent?.Invoke(this, orderEvent);
 
+                    _executionModel.OnOrderEvent(_qcAlgorithmIntance, orderEvent);
+
                     try
                     {
                         //Trigger our order event handler
@@ -1520,7 +1537,7 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
                 {
                     Log.Trace(
                         $"BrokerageTransactionHandler.HandleDelistingNotification(): UtcTime: {CurrentTimeUtc} clearing position for delisted holding: " +
-                        $"Symbol: {e.Symbol.Value}, " +
+                        $"{e}, " +
                         $"Quantity: {security.Holdings.Quantity}");
                 }
 
@@ -1707,7 +1724,12 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
 
                 if (orderEvent.IsAssignment)
                 {
-                    orderEvent.Message = order.Tag;
+                    if (!string.IsNullOrEmpty(order.Tag))
+                    {
+                        orderEvent.Message = string.IsNullOrEmpty(orderEvent.Message)
+                            ? order.Tag
+                            : $"{orderEvent.Message}. {order.Tag}";
+                    }
                     HandlePositionAssigned(orderEvent);
                 }
             }
@@ -1894,11 +1916,12 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
 
         private void SendWarningOnPriceChange(string priceType, decimal priceRound, decimal priceOriginal)
         {
-            if (!priceOriginal.Equals(priceRound))
+            if (!priceOriginal.Equals(priceRound) && !_hasLoggedPriceRoundingWarning)
             {
                 _algorithm.Error(
                     $"Warning: To meet brokerage precision requirements, order {priceType.ToStringInvariant()} was rounded to {priceRound.ToStringInvariant()} from {priceOriginal.ToStringInvariant()}"
                 );
+                _hasLoggedPriceRoundingWarning = true;
             }
         }
 
