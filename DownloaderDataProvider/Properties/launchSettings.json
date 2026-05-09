@@ -11,6 +11,10 @@
     "config_ibkr_localhost-6-Minute-web.json": {
       "commandName": "Project",
       "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\Downloader\\config_ibkr_localhost-6-Minute-web.json"
+    },
+    "config_polygondata.json": {
+      "commandName": "Project",
+      "commandLineArgs": "--config C:\\Users\\colin\\Documents\\Projects\\lean\\Configs\\Downloader\\config_polygondata.json"
     }
   }
 }
